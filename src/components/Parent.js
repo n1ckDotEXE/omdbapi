@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import axios from "axios";
+import "./movie.css";
 export class Movie extends Component {
 	state = {
 		movieInput: "",
@@ -18,7 +19,7 @@ export class Movie extends Component {
 		});
 		try {
 			let movieData = await axios.get(
-				`http://omdbapi.com/?apikey=6332b1e1&s=${randomTitle[randomSelectedTitleIndex]}`
+				`http://www.omdbapi.com/?i=tt3896198&apikey=${process.env.REACT_APP_OMBD_API_KEY}&s=${randomTitle[randomSelectedTitleIndex]}`
 			);
 			this.setState({
 				movieArray: movieData.data.Search,
@@ -36,33 +37,22 @@ export class Movie extends Component {
 			errorMessage: "",
 		});
 	};
-	handleSearchMovieError = async (data) => {
-		// console.log(data);
-		// console.log(data.Error);
-		//console.log(data.Response);
-		try {
-			if (data.Response === "False") {
-				if (data.Error === "Movie not found!") {
-					this.setState({
-						isError: true,
-						errorMessage: "Movie Not found! check your title",
-						isLoading: false,
-					});
-					return null;
-				}
-				if (data.Error == "Too many results.") {
-					this.setState({
-						isError: true,
-						errorMessage:
-							"Too many results please narrow your search!",
-						isLoading: false,
-					});
-					return null;
-				}
-			} else {
+	handleSearchMovieError = (data) => {
+		console.log(data);
+		switch (data.Error) {
+			case "Movie not found!":
+				return {
+					response: false,
+					message: "Movie Not found! check your title",
+				};
+			case "Too many results.":
+				return {
+					response: false,
+					message: "Too many results please narrow your search!",
+				};
+			default:
 				return data.Search;
-			}
-		} catch (e) {}
+		}
 	};
 	handleSearchMovieOnClick = async (event) => {
 		//event.preventDefault();
@@ -78,49 +68,39 @@ export class Movie extends Component {
 		});
 		try {
 			let movieData = await axios.get(
-				`http://www.omdbapi.com/?i=tt3896198&apikey=${process.env.REACT_APP_OMBD_API_KEY}&s=${this.state.movieInput}`
+				`http://omdbapi.com/?apikey=6332b1e1&s=${this.state.movieInput}`
 			);
-			let movieArray = await this.handleSearchMovieError(movieData.data);
-			if (movieArray === null) {
+			let Data = this.handleSearchMovieError(movieData.data);
+			if (Data.response === false) {
+				this.setState({
+					isError: true,
+					errorMessage: Data.message,
+					isLoading: false,
+				});
 				return;
 			} else {
 				this.setState({
-					movieArray: movieArray,
+					movieArray: Data,
 					movieInput: "",
 					isLoading: false,
 					isError: false,
 					errorMessage: "",
 				});
 			}
-			// if (
-			//   movieData.data.Response === "False" &&
-			//   movieData.data.Error === "Too many results."
-			// ) {
-			//   this.setState({
-			//     isError: true,
-			//     errorMessage: "Too many results please narrow your search!",
-			//     isLoading: false,
-			//   });
-			//   return;
-			// }
-			// if (
-			//   movieData.data.Response === "False" &&
-			//   movieData.data.Error === "Movie not found!"
-			// ) {
-			//   this.setState({
-			//     isError: true,
-			//     errorMessage: "Sorry, movie not found! Please check your title",
-			//     isLoading: false,
-			//   });
-			//   return;
-			// }
 		} catch (e) {
 			console.log(e);
 		}
 	};
 	showMovieArrayList = () => {
 		return this.state.movieArray.map((item) => {
-			return <div key={item.imdbID}>{item.Title}</div>;
+			return (
+				<div key={item.imdbID}>
+					<div>{item.Title}</div>
+					<div>
+						<img src={item.Poster} />
+					</div>
+				</div>
+			);
 		});
 	};
 	handleSearchOnEnter = async (event) => {
@@ -141,9 +121,11 @@ export class Movie extends Component {
 				<input
 					style={{ width: 450 }}
 					name="movieInput"
+					className="movieInput"
 					onChange={this.handleMovieOnChange}
 					onKeyPress={this.handleSearchOnEnter}
 					value={this.state.movieInput}
+					//id="movieInput"
 				/>
 				<br />
 				<button
